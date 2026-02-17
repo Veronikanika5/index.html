@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Весёлый тест для друга</title>
+
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    font-family: 'Comic Sans MS', cursive;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background 0.8s ease-in-out;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.overlay {
+    background: rgba(255,255,255,0.9);
+    padding: 35px;
+    border-radius: 25px;
+    text-align: center;
+    animation: fadeIn 1s ease;
+    box-shadow: 0 0 30px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+h1 {
+    color: #ff6f61;
+    animation: slideIn 0.8s ease;
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 18px;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    margin: 10px;
+    transition: 0.3s;
+}
+
+.correct {
+    background-color: #ff6f61;
+    color: white;
+}
+
+.wrong {
+    background-color: white;
+    color: #ff6f61;
+    position: relative;
+}
+
+button:hover {
+    transform: scale(1.15);
+}
+
+@keyframes fadeIn {
+    from {opacity:0;}
+    to {opacity:1;}
+}
+
+@keyframes slideIn {
+    from {transform: translateY(-20px); opacity:0;}
+    to {transform: translateY(0); opacity:1;}
+}
+
+#game {
+    display: none;
+}
+
+.final-text {
+    color: #ff6f61;
+    font-size: 36px;
+    font-weight: bold;
+    text-shadow: 0 0 20px #fff;
+    animation: pop 1s ease forwards;
+    opacity: 0;
+}
+
+@keyframes pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+</style>
+</head>
+
+<body>
+
+<div id="startScreen" class="overlay">
+    <h1>Готов к весёлому тесту, дружище? 😎</h1>
+    <button onclick="startGame()">Да, поехали! 🚀</button>
+</div>
+
+<div id="game" class="overlay">
+    <h1 id="question"></h1>
+    <div id="buttons"></div>
+</div>
+
+<script>
+// Чёткие и смешные GIF для каждого вопроса
+const backgrounds = [
+"https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif",  // танцующий кот
+"https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif",         // кот с удивлением
+"https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",     // мем "не знаю"
+"https://media.giphy.com/media/3o6ZtaO9BZHcOjmErm/giphy.gif",     // хаос смеха
+"https://media.giphy.com/media/26FPJGjhefSJuaRhu/giphy.gif",     // веселый пёс
+"https://media.giphy.com/media/3oEdv4hwWTpx6Yz1Ac/giphy.gif",     // смех до слёз
+"https://media.giphy.com/media/xT0xeJpnrWC4XWblEk/giphy.gif",    // гиф с лицом "WTF?"
+"https://media.giphy.com/media/l4Ki2obCyAQS5WhFe/giphy.gif",     // кот падает
+"https://media.giphy.com/media/26xBvQa5dyU3ADkJ6/giphy.gif",     // танцы
+"https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif"     // сумасшедший смех
+];
+
+const funnyPhrases = [
+"Не-а, дружище 😂",
+"Попробуй ещё раз 😎",
+"Ха-ха, почти! 😆",
+"Может лучше взять кофе? ☕",
+"Я смеюсь до слёз 😹",
+"Опять промах 😏",
+"Ну почти, почти 😜",
+"Шутник, ты где? 🤪"
+];
+
+// Юмористические вопросы и ответы
+const questions = [
+{ text: "Ты бы съел мою последнюю пиццу? 🍕", answers: ["Конечно, я голодный! 😋", "Нет, я на диете 😎"] },
+{ text: "Если бы я стала супергероем, кем бы я была? 🦸‍♂️", answers: ["Главным шутником 😂", "Скучным бухгалтером 😴"] },
+{ text: "Ты когда-нибудь танцевал так, как будто никто не видит? 💃", answers: ["Да, и видео есть! 🎬", "Нет, стесняюсь 😳"] },
+{ text: "Ты согласен, что мемы — это искусство? 🎨", answers: ["Абсолютно! 😂", "Нет, это бездарно 😒"] },
+{ text: "Если я украду твой последний чипс, ты... 🍟", answers: ["Буду смеяться 😆", "Пойду в ярость 😤"] },
+{ text: "Ты сможешь пережить день без кофе? ☕", answers: ["Невозможно 😵", "Конечно, легко 😎"] },
+{ text: "Если я надену смешной костюм, ты...", answers: ["Смеяться до слёз 😂", "Сразу убежишь 😱"] },
+{ text: "Что хуже: проспать или съесть слишком много пиццы? 🍕", answers: ["Проспать 😅", "Пиццу 😋"] },
+{ text: "Ты готов к приключениям? 🏕️", answers: ["Всегда! 🚀", "Нет, люблю диван 😴"] },
+{ text: "Если бы я была котом, ты бы меня... 🐱", answers: ["Обнял и гладишь 😻", "Игнорировал 😼"] }
+];
+
+let currentQuestion = 0;
+const questionEl = document.getElementById("question");
+const buttonsEl = document.getElementById("buttons");
+
+function changeBackground() {
+    document.body.style.background = 
+        `url("${backgrounds[currentQuestion]}") center/contain no-repeat fixed`;
+}
+
+function startGame() {
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("game").style.display = "block";
+    changeBackground();
+    showQuestion();
+}
+
+function showQuestion() {
+    buttonsEl.innerHTML = "";
+    questionEl.style.animation = "none";
+    void questionEl.offsetWidth;
+    questionEl.style.animation = "slideIn 0.8s ease";
+    questionEl.innerText = questions[currentQuestion].text;
+
+    questions[currentQuestion].answers.forEach((answer, index) => {
+        const btn = document.createElement("button");
+        btn.innerText = answer;
+
+        if (index === 0) {
+            btn.classList.add("correct");
+            btn.onclick = nextQuestion;
+        } else {
+            btn.classList.add("wrong");
+            btn.onmouseover = () => {
+                const x = Math.random() * (window.innerWidth - 150);
+                const y = Math.random() * (window.innerHeight - 50);
+                btn.style.position = "absolute";
+                btn.style.left = x + "px";
+                btn.style.top = y + "px";
+                btn.innerText = funnyPhrases[Math.floor(Math.random() * funnyPhrases.length)];
+            };
+        }
+
+        buttonsEl.appendChild(btn);
+    });
+}
+
+function nextQuestion() {
+    currentQuestion++;
+    if (currentQuestion < questions.length) {
+        changeBackground();
+        showQuestion();
+    } else {
+        showFinal();
+    }
+}
+
+function showFinal() {
+    questionEl.innerHTML = "";
+    buttonsEl.innerHTML = "";
+
+    const finalText = document.createElement("div");
+    finalText.classList.add("final-text");
+    finalText.innerHTML = "Поздравляю! 🎉<br>Ты прошёл тест и теперь заслужил кучу мемов 😂";
+    document.getElementById("game").appendChild(finalText);
+}
+</script>
+
+</body>
+</html>
